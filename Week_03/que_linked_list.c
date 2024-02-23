@@ -47,7 +47,7 @@ void add_to_que(struct que *que_num, int data_to_be_stored)
     node->num = data_to_be_stored;
     node->ptr_prev = que_num->last_node;
     node->ptr_next = NULL;
-
+    
     if (que_num->length == 0)
     {
         que_num->first_node = node;
