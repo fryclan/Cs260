@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "que_linked_list.h": "c"
+        "que_linked_list.h": "c",
+        "typeinfo": "c"
     }
 }

@@ -26,6 +26,27 @@ void print_graph(struct Graph *graph_name)
     
 }
 
+int print_sum_for_que_of_ques(struct que *que_of_ques)
+{
+    struct linked_list_node *temp_que_node = que_of_ques->first_node;
+    while (temp_que_node != NULL)
+    {
+        int sum_of_path = 0;
+        struct que *temp_edge_que = temp_que_node->data;
+        struct linked_list_node *temp_edge = temp_edge_que->first_node;
+        while (temp_edge != NULL)
+        {
+            Edge *edge_node = temp_edge->data;
+            sum_of_path += edge_node->weight;
+            printf("%s\n", edge_node->name);
+            temp_edge = temp_edge->ptr_next;
+        }
+        temp_que_node = temp_que_node->ptr_next;
+        printf("sum of path: %d\n", sum_of_path);
+    }
+    
+}
+
 //add a vertex to the graph
 Vertex * add_vertex(char *name)
 {
@@ -63,18 +84,221 @@ Edge * add_edge(int edge_weight, char *name, Vertex *vertex1, Vertex *vertex2)
     edge_name->weight = edge_weight;
     edge_name->point1 = vertex1;
     edge_name->point2 = vertex2;
-    add_to_que(vertex1->edge_list, edge_name);
-    add_to_que(vertex2->edge_list, edge_name);
+    vertex1->edge_list = add_to_que(vertex1->edge_list, edge_name);
+    vertex2->edge_list = add_to_que(vertex2->edge_list, edge_name);
     vertex1->degree += 1;
     vertex2->degree += 1;
     return edge_name;
 }
 
-//Function for finding the shortest path from one vertex to another
-void shortest_path(char *vertex_name1, char *vertex_name2)
+Edge * compare_edge_weights(Edge *edge1, Edge *edge2)
 {
-    
+    if (edge1 == NULL)
+    {
+        return edge2;
+    }
+    else if (edge2 == NULL)
+    {
+        return edge1;
+    }
+    else if (edge1->weight <= edge2->weight)
+    {
+        return edge1;
+    }
+    return edge2;  
 }
+//find lowest edge weight out of specific vertex
+Edge * find_lowest_edge_weight(Vertex *temp_vert)
+{
+    Edge *temp_edge = NULL;
+    struct linked_list_node *temp_edge_node = temp_vert->edge_list->first_node;
+    while (temp_edge_node != NULL)
+    {
+        Edge *edge_node = temp_edge_node->data;
+        temp_edge = compare_edge_weights(temp_edge, edge_node);
+        temp_edge_node = temp_edge_node->ptr_next;
+    }
+    return temp_edge;
+}
+
+//search a que to see if node data is already in que
+int search_que_data(struct que *que_to_be_searched, Edge *data_to_be_checked)
+{
+    int flag_point_1_found = 0;
+    int flag_point_2_found = 0;
+
+    if (que_to_be_searched == NULL)
+    {
+        return 1;
+    }
+    
+    struct linked_list_node *node_to_be_searched = que_to_be_searched->first_node;
+    while (node_to_be_searched != NULL)
+    {
+        Edge *temp_edge_from_edge_que = node_to_be_searched->data;
+        if (data_to_be_checked == temp_edge_from_edge_que)
+        {
+            return 0;
+        }
+        else if (data_to_be_checked->point1 == temp_edge_from_edge_que->point1 || 
+            data_to_be_checked->point1 == temp_edge_from_edge_que->point2)
+        {
+            flag_point_1_found = 1;
+        }
+        if (data_to_be_checked->point2 == temp_edge_from_edge_que->point1 || 
+            data_to_be_checked->point2 == temp_edge_from_edge_que->point2)
+        {
+            flag_point_2_found = 1;
+        }
+
+        if (flag_point_1_found && flag_point_2_found)
+        {
+            return 0;
+        }
+        
+        
+        node_to_be_searched = node_to_be_searched->ptr_next;
+    }
+    return 1;
+}
+
+struct que * path_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_in, struct que *A_Z_path_ques, char *starting_point, char *ending_point)
+{
+    static int nested_levels = 0;
+    struct linked_list_node *node_vert = graph->vertices->first_node;
+    struct linked_list_node *node_edge = graph->edges->first_node;
+    Vertex *ending_vert = search_for_node(node_vert, ending_point,check_vertex_name);
+    Vertex *starting_vert = search_for_node(node_vert, starting_point,check_vertex_name);
+    nested_levels++;
+    // printf("starting_vert name: %s, %d\n", starting_vert->name, nested_levels);
+
+    if (nested_levels >= 50)
+    {
+        nested_levels--;
+        return NULL;
+    }
+
+    Vertex *temp_vert = NULL;
+    struct que *edge_que = edge_que_passed_in;
+    struct linked_list_node *temp_edge_node = starting_vert->edge_list->first_node;
+    struct que *path_que = A_Z_path_ques;
+
+    temp_vert = starting_vert;
+    temp_edge_node = temp_vert->edge_list->first_node;
+    
+    while (temp_edge_node != NULL)
+    {
+        Edge *temp_edge = temp_edge_node->data;
+        if (search_que_data(edge_que, temp_edge) == 1)
+        {
+            edge_que = add_to_que(edge_que, temp_edge);
+            if (temp_edge->point1 == ending_vert || temp_edge->point2 == ending_vert)
+            {
+                struct que *edge_que_copy = NULL;
+                struct linked_list_node *temp_node = edge_que->first_node;
+                while (temp_node != NULL)
+                {
+                    Edge *temp_storage = temp_node->data;
+                    edge_que_copy = add_to_que(edge_que_copy, temp_storage);
+                    temp_node = temp_node->ptr_next;
+                }
+                
+                path_que = add_to_que(path_que, edge_que_copy);
+            }
+            else
+            {
+                if(check_vertex_name(temp_edge->point1, starting_vert->name) == 1)
+                {
+                    temp_vert = temp_edge->point2;
+                }
+                else if(check_vertex_name(temp_edge->point2, starting_vert->name) == 1)
+                {
+                    temp_vert = temp_edge->point1;
+                }
+
+                edge_que = path_from_a_to_z(graph, edge_que, path_que, temp_vert->name, ending_point);
+            }
+        }
+        temp_edge_node = temp_edge_node->ptr_next;
+    }
+
+    // Edge *last_edge_in_list = peek_last_node(edge_que);
+
+    // if (last_edge_in_list->point1 == ending_vert || last_edge_in_list->point2 == ending_vert)
+    // {
+    //     nested_levels--;
+    //     return edge_que;
+    // }
+
+    pop_last_node(edge_que);
+    nested_levels--;
+    return edge_que;
+}
+
+
+
+// Function for finding the shortest path from one vertex to another
+
+// struct que * shortest_path(struct Graph *graph, char *starting_point, char *ending_point)
+// {
+//     static int nested_levels = 0;
+//     struct linked_list_node *node_vert = graph->vertices->first_node;
+//     struct linked_list_node *node_edge = graph->edges->first_node;
+//     Vertex *ending_vert = search_for_node(node_vert, ending_point,check_vertex_name);
+//     Vertex *starting_vert = search_for_node(node_vert, starting_point,check_vertex_name);
+//     nested_levels++;
+//     // printf("starting_vert name: %s, %d\n", starting_vert->name, nested_levels);
+
+//     if (nested_levels >= 50)
+//     {
+//         nested_levels--;
+//         return NULL;
+//     }
+
+//     Vertex *temp_vert = NULL;
+//     struct que *edge_que = edge_que_passed_in;
+//     struct linked_list_node *temp_edge_node = starting_vert->edge_list->first_node;
+
+//     temp_vert = starting_vert;
+//     temp_edge_node = temp_vert->edge_list->first_node;
+    
+//     while (temp_edge_node != NULL)
+//     {
+//         Edge *temp_edge = temp_edge_node->data;
+//         if (search_que_data(edge_que, temp_edge) == 1)
+//         {
+//             edge_que = add_to_que(edge_que, temp_edge);
+//             if (temp_edge->point1 == ending_vert || temp_edge->point2 == ending_vert)
+//             {
+//                 nested_levels--;
+//                 return edge_que;
+//             }
+//             if(check_vertex_name(temp_edge->point1, starting_vert->name) == 1)
+//             {
+//                 temp_vert = temp_edge->point2;
+//             }
+//             else if(check_vertex_name(temp_edge->point2, starting_vert->name) == 1)
+//             {
+//                 temp_vert = temp_edge->point1;
+//             }
+
+//             edge_que = path_from_a_to_z(graph, edge_que, temp_vert->name, ending_point);
+//         }
+//         temp_edge_node = temp_edge_node->ptr_next;
+//     }
+//     Edge *last_edge_in_list = peek_last_node(edge_que);
+
+//     if (last_edge_in_list->point1 == ending_vert || last_edge_in_list->point2 == ending_vert)
+//     {
+//         nested_levels--;
+//         return edge_que;
+//     }
+
+//     pop_last_node(edge_que);
+//     nested_levels--;
+//     return edge_que;
+// }
+
 
 void Minimum_Spanning_Tree()
 {
@@ -84,6 +308,8 @@ void Minimum_Spanning_Tree()
 void main()
 {
     struct Graph graph1 = { 0 };
+    struct que *path_que_ptr = NULL;
+    struct que que_of_ques = { 0 };
     graph1.vertices = add_to_que(graph1.vertices, add_vertex("A"));
     add_to_que(graph1.vertices, add_vertex("B"));
     add_to_que(graph1.vertices, add_vertex("C"));
@@ -118,9 +344,11 @@ void main()
     add_to_que(graph1.edges, add_edge(5, "E-G", 
         search_for_node(graph1.vertices->first_node,"E",check_vertex_name), 
         search_for_node(graph1.vertices->first_node,"G",check_vertex_name)));
-    add_to_que(graph1.edges, add_edge(2, "G-F", 
-        search_for_node(graph1.vertices->first_node,"G",check_vertex_name), 
-        search_for_node(graph1.vertices->first_node,"F",check_vertex_name)));
-    
-    print_graph(&graph1);
+    add_to_que(graph1.edges, add_edge(2, "F-G", 
+        search_for_node(graph1.vertices->first_node,"F",check_vertex_name), 
+        search_for_node(graph1.vertices->first_node,"G",check_vertex_name)));
+
+    path_que_ptr = path_from_a_to_z(&graph1,path_que_ptr,&que_of_ques,"A","G");
+
+    print_sum_for_que_of_ques(&que_of_ques);
 }
