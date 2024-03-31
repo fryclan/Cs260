@@ -299,7 +299,10 @@ struct que * path_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_i
 //     return edge_que;
 // }
 
-
+//need to make 4 ques: que 1 list of vertices in graph and not in tree, que 2 list of vertices added to minimum spanning tree, que 3 temp list of connected vertices not in tree, que 4 list of edges in graph sorteded by weight
+//step one connect 2 vertices from graph with lowest edge value from list (should be first one) add vertices to que 2 remove vertices from que 1 
+//step 2 cheak next lowest weighted edge's points for one in tree and one not in tree or neither in tree if neither in tree add points to que 3
+//repeat step 2 till all vertices are in tree
 void Minimum_Spanning_Tree()
 {
 
