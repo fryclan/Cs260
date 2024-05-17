@@ -100,13 +100,13 @@ void * pop_last_node(struct que *que_num)
 {
     if (que_num == NULL)
     {
-        printf("no data in que\n");
+        // printf("no data in que\n");
         return 0;   
     }
     
     if (que_num->last_node == NULL)
     {
-        printf("no data in que\n");
+        // printf("no data in que\n");
         return 0;
     }
     else

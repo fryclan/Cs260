@@ -26,25 +26,50 @@ void print_graph(struct Graph *graph_name)
     
 }
 
-int print_sum_for_que_of_ques(struct que *que_of_ques)
+void print_que(struct que *que_to_be_printed)
 {
+    printf("\n");
+    int sum_of_path = 0;
+    struct linked_list_node *temp_edge = que_to_be_printed->first_node;
+    while (temp_edge != NULL)
+    {
+        Edge *edge_node = temp_edge->data;
+        sum_of_path += edge_node->weight;
+        printf("%s\n", edge_node->name);
+        temp_edge = temp_edge->ptr_next;
+    }
+    printf("sum of path: %d\n\n", sum_of_path);
+}
+
+struct que * find_shortest_path(struct que *que_of_ques)
+{
+    struct que *returned_path = NULL;
     struct linked_list_node *temp_que_node = que_of_ques->first_node;
+    int sum_of_path = 0;
+    int smallest_sum_of_path = 999999999;
     while (temp_que_node != NULL)
     {
-        int sum_of_path = 0;
         struct que *temp_edge_que = temp_que_node->data;
         struct linked_list_node *temp_edge = temp_edge_que->first_node;
         while (temp_edge != NULL)
         {
             Edge *edge_node = temp_edge->data;
             sum_of_path += edge_node->weight;
-            printf("%s\n", edge_node->name);
+            // printf("%s\n", edge_node->name);
             temp_edge = temp_edge->ptr_next;
         }
+        if (sum_of_path < smallest_sum_of_path)
+        {
+            smallest_sum_of_path = sum_of_path;
+            returned_path = temp_edge_que;
+        }
         temp_que_node = temp_que_node->ptr_next;
-        printf("sum of path: %d\n", sum_of_path);
+        // printf("sum of path: %d\n", sum_of_path);
+
+        sum_of_path = 0;
     }
-    
+    printf("smallest sum of path: %d\n", smallest_sum_of_path);
+    return returned_path;
 }
 
 //add a vertex to the graph
@@ -162,7 +187,7 @@ int search_que_data(struct que *que_to_be_searched, Edge *data_to_be_checked)
     return 1;
 }
 
-struct que * path_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_in, struct que *A_Z_path_ques, char *starting_point, char *ending_point)
+struct que * paths_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_in, struct que *A_Z_path_ques, char *starting_point, char *ending_point)
 {
     static int nested_levels = 0;
     struct linked_list_node *node_vert = graph->vertices->first_node;
@@ -204,6 +229,11 @@ struct que * path_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_i
                 }
                 
                 path_que = add_to_que(path_que, edge_que_copy);
+                if (nested_levels > 1)
+                {
+                    pop_last_node(edge_que);
+                }
+                
             }
             else
             {
@@ -215,97 +245,27 @@ struct que * path_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_i
                 {
                     temp_vert = temp_edge->point1;
                 }
-
-                edge_que = path_from_a_to_z(graph, edge_que, path_que, temp_vert->name, ending_point);
+                // printf("before recursion goes down\n");
+                // print_que(edge_que);
+                edge_que = paths_from_a_to_z(graph, edge_que, path_que, temp_vert->name, ending_point);
+                // printf("after edge_que is stored and returns from recursion\n");
             }
         }
         temp_edge_node = temp_edge_node->ptr_next;
     }
-
-    // Edge *last_edge_in_list = peek_last_node(edge_que);
-
-    // if (last_edge_in_list->point1 == ending_vert || last_edge_in_list->point2 == ending_vert)
-    // {
-    //     nested_levels--;
-    //     return edge_que;
-    // }
-
     pop_last_node(edge_que);
     nested_levels--;
     return edge_que;
 }
 
-
-
-// Function for finding the shortest path from one vertex to another
-
-// struct que * shortest_path(struct Graph *graph, char *starting_point, char *ending_point)
-// {
-//     static int nested_levels = 0;
-//     struct linked_list_node *node_vert = graph->vertices->first_node;
-//     struct linked_list_node *node_edge = graph->edges->first_node;
-//     Vertex *ending_vert = search_for_node(node_vert, ending_point,check_vertex_name);
-//     Vertex *starting_vert = search_for_node(node_vert, starting_point,check_vertex_name);
-//     nested_levels++;
-//     // printf("starting_vert name: %s, %d\n", starting_vert->name, nested_levels);
-
-//     if (nested_levels >= 50)
-//     {
-//         nested_levels--;
-//         return NULL;
-//     }
-
-//     Vertex *temp_vert = NULL;
-//     struct que *edge_que = edge_que_passed_in;
-//     struct linked_list_node *temp_edge_node = starting_vert->edge_list->first_node;
-
-//     temp_vert = starting_vert;
-//     temp_edge_node = temp_vert->edge_list->first_node;
-    
-//     while (temp_edge_node != NULL)
-//     {
-//         Edge *temp_edge = temp_edge_node->data;
-//         if (search_que_data(edge_que, temp_edge) == 1)
-//         {
-//             edge_que = add_to_que(edge_que, temp_edge);
-//             if (temp_edge->point1 == ending_vert || temp_edge->point2 == ending_vert)
-//             {
-//                 nested_levels--;
-//                 return edge_que;
-//             }
-//             if(check_vertex_name(temp_edge->point1, starting_vert->name) == 1)
-//             {
-//                 temp_vert = temp_edge->point2;
-//             }
-//             else if(check_vertex_name(temp_edge->point2, starting_vert->name) == 1)
-//             {
-//                 temp_vert = temp_edge->point1;
-//             }
-
-//             edge_que = path_from_a_to_z(graph, edge_que, temp_vert->name, ending_point);
-//         }
-//         temp_edge_node = temp_edge_node->ptr_next;
-//     }
-//     Edge *last_edge_in_list = peek_last_node(edge_que);
-
-//     if (last_edge_in_list->point1 == ending_vert || last_edge_in_list->point2 == ending_vert)
-//     {
-//         nested_levels--;
-//         return edge_que;
-//     }
-
-//     pop_last_node(edge_que);
-//     nested_levels--;
-//     return edge_que;
-// }
-
-//need to make 4 ques: que 1 list of vertices in graph and not in tree, que 2 list of vertices added to minimum spanning tree, que 3 temp list of connected vertices not in tree, que 4 list of edges in graph sorteded by weight
+//need to make 4 ques: que 1 list of vertices in graph and not in tree, que 2 list of vertices added to minimum spanning tree, que 3 temp list of
+//connected vertices not in tree, que 4 list of edges in graph sorteded by weight
 //step one connect 2 vertices from graph with lowest edge value from list (should be first one) add vertices to que 2 remove vertices from que 1 
 //step 2 cheak next lowest weighted edge's points for one in tree and one not in tree or neither in tree if neither in tree add points to que 3
 //repeat step 2 till all vertices are in tree
 void Minimum_Spanning_Tree()
 {
-
+   
 }
 
 void main()
@@ -351,7 +311,14 @@ void main()
         search_for_node(graph1.vertices->first_node,"F",check_vertex_name), 
         search_for_node(graph1.vertices->first_node,"G",check_vertex_name)));
 
-    path_que_ptr = path_from_a_to_z(&graph1,path_que_ptr,&que_of_ques,"A","G");
+    //prints Full Gragh Structure
+    print_graph(&graph1);
+    printf("\n");
+    //prints Full Graph Structure
 
-    print_sum_for_que_of_ques(&que_of_ques);
+    //shortest path print
+    paths_from_a_to_z(&graph1,path_que_ptr,&que_of_ques,"C","G");
+    path_que_ptr = find_shortest_path(&que_of_ques);
+    print_que(path_que_ptr);
+    //sortest path print finished
 }
