@@ -32,4 +32,8 @@ void * pop_last_node(struct que *que_num);
 
 void * search_for_node(struct linked_list_node *node, void * data_to_be_found,int (*compare_function)(void *data_ptr, void *data_to_be_compared));
 
+void * search_for_node_to_delete(struct linked_list_node *node, void * data_to_be_found,int (*compare_function)(void *data_ptr, void *data_to_be_compared));
+
+struct que * add_to_que_sorted(struct que *que_num, void *data_to_be_stored, int (*compare_function)(void *data_ptr, void *data_to_be_compared));
+
 

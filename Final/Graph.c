@@ -94,6 +94,40 @@ int check_vertex_name(void *vertex_v, void *vertex_name)
     return 0;
 }
 
+int check_edge_name(void *edge_v, void *edge_name)
+{
+    Edge *edge = (Edge *)edge_v;
+    char *name = (char *)edge_name;
+    if (strcmp(edge->name, name) == 0)
+    {
+        return 1;
+    }
+    return 0;
+}
+
+int check_edge_weights_binary(void *edge_1, void *edge_2)
+{
+    Edge *edge1= (Edge *)edge_1;
+    Edge *edge2 = (Edge *)edge_2;
+    if (edge1==NULL&&edge2==NULL)
+    {
+        return -1;
+    }
+    else if (edge1 == NULL)
+    {
+        return 0;
+    }
+    else if (edge2 == NULL)
+    {
+        return 1;
+    }
+    else if (edge1->weight <= edge2->weight)
+    {
+        return 1;
+    }
+    return 0;
+}
+
 //add an edge to the graph
 Edge * add_edge(int edge_weight, char *name, Vertex *vertex1, Vertex *vertex2)
 {
@@ -144,6 +178,32 @@ Edge * find_lowest_edge_weight(Vertex *temp_vert)
         temp_edge_node = temp_edge_node->ptr_next;
     }
     return temp_edge;
+}
+
+Edge * find_lowest_edge_weight_edge_list(struct que *edges_fed_in)
+{
+    Edge *temp_edge = NULL;
+    struct linked_list_node *temp_edge_node = edges_fed_in->first_node;
+    while (temp_edge_node != NULL)
+    {
+        Edge *edge_node = temp_edge_node->data;
+        temp_edge = compare_edge_weights(temp_edge, edge_node);
+        temp_edge_node = temp_edge_node->ptr_next;
+    }
+    return temp_edge;
+}
+
+struct que * Move_from_que_to_que(struct que *que_to_move_from, struct que *que_to_move_to)
+{
+    struct linked_list_node *temp_node = que_to_move_from->first_node;
+
+    while (temp_node !=NULL)
+    {
+        que_to_move_to = add_to_que(que_to_move_to, temp_node->data);
+        temp_node = temp_node->ptr_next;
+        pop_first_node(que_to_move_from);
+    }
+    return que_to_move_to;
 }
 
 //search a que to see if node data is already in que
@@ -258,14 +318,151 @@ struct que * paths_from_a_to_z(struct Graph *graph, struct que *edge_que_passed_
     return edge_que;
 }
 
+struct Graph Minimum_Spanning_Tree(struct Graph *graph_fed_in)
+{
 //need to make 4 ques: que 1 list of vertices in graph and not in tree, que 2 list of vertices added to minimum spanning tree, que 3 temp list of
 //connected vertices not in tree, que 4 list of edges in graph sorteded by weight
 //step one connect 2 vertices from graph with lowest edge value from list (should be first one) add vertices to que 2 remove vertices from que 1 
 //step 2 cheak next lowest weighted edge's points for one in tree and one not in tree or neither in tree if neither in tree add points to que 3
 //repeat step 2 till all vertices are in tree
-void Minimum_Spanning_Tree()
-{
-   
+    struct que *verts_not_in_spaning_tree = graph_fed_in->vertices;
+    struct que *edges_not_sorted = graph_fed_in->edges;
+    struct que *verts_in_spanning_tree = NULL;
+    struct que *verts_connected_not_in_tree = NULL;
+    struct que *sorted_edges = NULL;
+    struct que *edges_in_spanning_tree = NULL;
+    struct que *edges_connected_not_in_tree = NULL;
+    struct Graph graph_to_return = { 0 };
+    printf("is it breaking here\n");
+    // print_que(edges_not_sorted);
+    struct linked_list_node *temp_edge = NULL;
+    temp_edge = edges_not_sorted->first_node;
+
+    while (temp_edge !=NULL)
+    {
+        sorted_edges = add_to_que_sorted(sorted_edges, temp_edge->data, check_edge_weights_binary);
+        temp_edge = temp_edge->ptr_next;
+    }
+    print_que(sorted_edges);
+    // printf("how about here\n");
+    struct linked_list_node *temp_node = sorted_edges->first_node;
+    // printf("is it in the while loop?\n");
+    int counter = 0;
+    while (temp_node != NULL)
+    {
+        // counter = counter + 1;
+        // printf("loop count %d\n", counter);
+        struct Edge *edge_to_connect = temp_node->data;
+        // printf("or mayble it is the edge structure?\n");
+        if (verts_in_spanning_tree == NULL)
+        {
+            // printf("was it the first if\n");
+            verts_in_spanning_tree = add_to_que(verts_in_spanning_tree, edge_to_connect->point1);
+            verts_in_spanning_tree = add_to_que(verts_in_spanning_tree, edge_to_connect->point2);
+            edges_in_spanning_tree = add_to_que(edges_in_spanning_tree, edge_to_connect);
+            // printf("well it wasnt the first if statment\n");
+        }
+        //cheak for vert 1 in tree
+        else if (search_for_node(verts_in_spanning_tree->first_node, edge_to_connect->point1, check_vertex_name) != NULL)
+        {
+            // printf("how about the vert 1 cheak\n");
+            if (search_for_node(verts_in_spanning_tree->first_node, edge_to_connect->point2, check_vertex_name) == NULL)
+            {
+                if (verts_connected_not_in_tree != NULL)
+                {
+                    if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point2, check_vertex_name) != NULL)
+                    {
+                        // printf("is it the move function?\n");
+                        verts_in_spanning_tree = Move_from_que_to_que(verts_connected_not_in_tree, verts_in_spanning_tree);
+                        edges_in_spanning_tree = Move_from_que_to_que(edges_connected_not_in_tree, edges_in_spanning_tree);
+                        // printf("so it wasnt the move from que to que\n");
+                    }
+                    else
+                    {
+                        // printf("was it the else statment?\n");
+                        verts_in_spanning_tree = add_to_que(verts_in_spanning_tree,edge_to_connect->point2);
+                        edges_in_spanning_tree = add_to_que(edges_in_spanning_tree, edge_to_connect);
+                    }
+                }
+                else
+                {
+                    verts_in_spanning_tree = add_to_que(verts_in_spanning_tree,edge_to_connect->point2);
+                    edges_in_spanning_tree = add_to_que(edges_in_spanning_tree, edge_to_connect);
+                }
+            }
+            else
+            {
+                /* code */
+            }
+            
+            // printf("how about the vert 1 cheak\n");
+        }
+        //cheak for vert 2 in tree
+        else if ((verts_in_spanning_tree->first_node, edge_to_connect->point2, check_vertex_name) != NULL)
+        {
+            // printf("gotcha its this one\n");
+            if (search_for_node(verts_in_spanning_tree->first_node, edge_to_connect->point1, check_vertex_name) == NULL)
+            {
+                // printf("was it the first if check in the else if?\n");
+                if (verts_connected_not_in_tree != NULL)
+                {
+                    if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point1, check_vertex_name) != NULL)
+                    {
+                        // printf("is it the move function?\n");
+                        verts_in_spanning_tree = Move_from_que_to_que(verts_connected_not_in_tree, verts_in_spanning_tree);
+                        edges_in_spanning_tree = Move_from_que_to_que(edges_connected_not_in_tree, edges_in_spanning_tree);
+                        // printf("so it wasnt the move from que to que\n");
+                    }
+                    else
+                    {
+                        // printf("was it the else statment?\n");
+                        verts_in_spanning_tree = add_to_que(verts_in_spanning_tree,edge_to_connect->point1);
+                        edges_in_spanning_tree = add_to_que(edges_in_spanning_tree, edge_to_connect);
+                    }
+                }
+                else
+                {
+                    verts_in_spanning_tree = add_to_que(verts_in_spanning_tree,edge_to_connect->point1);
+                    edges_in_spanning_tree = add_to_que(edges_in_spanning_tree, edge_to_connect);
+                }
+            }
+            // printf("how about the vert 2 cheak\n");
+        }
+        //cheak for neither in tree
+        else if (search_for_node(verts_in_spanning_tree->first_node, edge_to_connect->point1, check_vertex_name) == NULL && search_for_node(verts_in_spanning_tree->first_node, edge_to_connect->point2, check_vertex_name) == NULL)
+        {
+            // printf("is it the neither\n");
+            if (verts_connected_not_in_tree == NULL)
+            {
+                verts_connected_not_in_tree = add_to_que(verts_connected_not_in_tree, edge_to_connect->point1);
+                verts_connected_not_in_tree = add_to_que(verts_connected_not_in_tree, edge_to_connect->point2);
+                edges_connected_not_in_tree = add_to_que(edges_connected_not_in_tree, edge_to_connect);
+            }
+            else if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point1, check_vertex_name) != NULL)
+            {
+                if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point2, check_vertex_name) == NULL)
+                {
+                    verts_connected_not_in_tree = add_to_que(verts_connected_not_in_tree, edge_to_connect->point2);
+                    edges_connected_not_in_tree = add_to_que(edges_connected_not_in_tree, edge_to_connect);
+                } 
+            }
+            else if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point2, check_vertex_name) != NULL)
+            {
+                if (search_for_node(verts_connected_not_in_tree->first_node, edge_to_connect->point1, check_vertex_name) == NULL)
+                {
+                    verts_connected_not_in_tree = add_to_que(verts_connected_not_in_tree, edge_to_connect->point1);
+                    edges_connected_not_in_tree = add_to_que(edges_connected_not_in_tree, edge_to_connect);
+                } 
+            }
+            // printf("how about the vert neither cheak\n");
+        }
+        temp_node = temp_node->ptr_next;
+        // printf("end of loop\n");
+    }
+    // printf("well it wasn't the while loop stuff???\n");
+    graph_to_return.edges = edges_in_spanning_tree;
+    graph_to_return.vertices = verts_in_spanning_tree;
+    return graph_to_return;
 }
 
 void main()
@@ -273,6 +470,7 @@ void main()
     struct Graph graph1 = { 0 };
     struct que *path_que_ptr = NULL;
     struct que que_of_ques = { 0 };
+    struct Graph minimum_spanning_tree = { 0 };
     graph1.vertices = add_to_que(graph1.vertices, add_vertex("A"));
     add_to_que(graph1.vertices, add_vertex("B"));
     add_to_que(graph1.vertices, add_vertex("C"));
@@ -321,4 +519,20 @@ void main()
     path_que_ptr = find_shortest_path(&que_of_ques);
     print_que(path_que_ptr);
     //sortest path print finished
+    // printf("where did it break\n");
+    //minimum spanning tree print stuff
+    minimum_spanning_tree = Minimum_Spanning_Tree(&graph1);
+    // printf("did it assign the returned function\n");
+    print_graph(&minimum_spanning_tree);
+    //minimum spanning tree print stuff
+
+
+    // printf("\nstart of test\n");
+    // struct que *test_for_move = NULL;
+    // print_que(graph1.edges);
+    // printf("it is printing the graph edges correctly\n");
+    // test_for_move = Move_from_que_to_que(graph1.edges, test_for_move);
+    // printf("it moved correctly\n");
+    // print_que(test_for_move);
+    
 }
